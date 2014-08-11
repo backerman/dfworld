@@ -4,6 +4,7 @@
 package savefile
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -29,15 +30,26 @@ func (f *file) DecompressedReader() (io.ReadCloser, error) {
 		return nil, errors.New("File is already compressed!")
 	}
 	zr := &zReader{f: f}
-	headerLen := binary.Size(f.header)
-	zr.hReader = io.LimitedReader{N: int64(headerLen), R: f}
+	decompHeader := f.header
+	decompHeader.IsCompressed = 0
+	headerLen := binary.Size(decompHeader)
+	var newHeaderBuf bytes.Buffer
+	binary.Write(&newHeaderBuf, binary.LittleEndian, &decompHeader)
+	// I'm keeping a LimitedReader here just because it keeps track of the
+	// number of bytes read. I think that makes sense.
+
+	zr.hReader = io.LimitedReader{N: int64(headerLen), R: &newHeaderBuf}
 	return zr, nil
 }
 
 func (r *zReader) Read(buf []byte) (int, error) {
 	if r.hReader.N > 0 {
 		// Still reading the file header.
-		return r.hReader.Read(buf)
+		n, err := r.hReader.Read(buf)
+		// Read same # of bytes from input and discard.
+		dummyBuf := make([]byte, n)
+		io.ReadFull(r.f, dummyBuf)
+		return n, err
 	}
 	// Reading from compressed blocks.
 	var freshReader bool

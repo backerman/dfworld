@@ -2,6 +2,9 @@
 //
 // decomp_gen_testdata generates a test artifact file for
 // compressed-world reading.
+//
+// Yes, this isn't even a valid save file; will change the artifact appropriately
+// as we actually implement more functionality.
 
 package main
 
@@ -25,9 +28,10 @@ func main() {
 	testfile, _ := os.Create("test-world.sav")
 	testfileDecomp, _ := os.Create("test-world-decomp.sav")
 	// Write a header.
-	header := savefile.FileHeader{1446, 1}
+	header := savefile.FileHeader{Version: 1446, IsCompressed: 1}
+	dHeader := savefile.FileHeader{Version: 1446, IsCompressed: 0}
 	binary.Write(testfile, binary.LittleEndian, &header)
-	binary.Write(testfileDecomp, binary.LittleEndian, &header)
+	binary.Write(testfileDecomp, binary.LittleEndian, &dHeader)
 	for _, s := range testBlocks {
 		// Compress the string.
 		var b bytes.Buffer

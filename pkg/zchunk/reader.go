@@ -43,7 +43,6 @@ func (r *reader) Read(buf []byte) (int, error) {
 		// a zlib reader to read the compressed string.
 		var toRead uint32
 		err = binary.Read(r.rawReader, binary.LittleEndian, &toRead)
-		fmt.Printf("This chunk has %v bytes of compressed data.\n", toRead)
 		if err == nil {
 			r.zInReader = io.LimitedReader{R: r.rawReader, N: int64(toRead)}
 			r.zOutReader, err = zlib.NewReader(&r.zInReader)
