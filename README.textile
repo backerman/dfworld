@@ -1,0 +1,8 @@
+h1. dfworld
+
+*dfworld* is a utility for extracting and otherwise maniuplating "Dwarf Fortress":df @world.sav@/@world.raw@ files.
+
+©2014 Brad Ackerman. Licensed under the "WTFPL":wtf.
+
+[df]http://www.bay12games.com/dwarves/
+[wtf]http://wtfpl.net/
