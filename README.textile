@@ -2,7 +2,22 @@ h1. dfworld
 
 *dfworld* is a utility for extracting and otherwise maniuplating "Dwarf Fortress":df @world.sav@/@world.raw@ files.
 
+h2. To-do list
+
+* List contents of save files
+* Extract raws
+* Modify save files
+* "Watch my Dwarf Fortress players play Dwarf Fortress":xkcd
+
+h2. Acknowledgements
+
+DF file format information comes from the following sources:
+
+* "Andux (DFwiki)":andux
+
 ©2014 Brad Ackerman. Licensed under the "WTFPL":wtf.
 
+[andux]http://dwarffortresswiki.org/index.php/User:Andux/Format_research
 [df]http://www.bay12games.com/dwarves/
 [wtf]http://wtfpl.net/
+[xkcd]http://xkcd.com/1223/
