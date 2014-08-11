@@ -29,5 +29,7 @@ func TestSomething(t *testing.T) {
 	Ω(expected).ShouldNot(BeEmpty())
 	actualR.Close()
 	expectedR.Close()
+	// Make sure header of compressed file didn't change.
+	Ω(compressed.Header().IsCompressed).Should(Equal(uint32(1)))
 	compressed.Close()
 }
