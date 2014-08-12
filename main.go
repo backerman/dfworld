@@ -13,9 +13,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var inFilename string
-var outFilename string
-
 func main() {
 	var rootCmd = &cobra.Command{
 		Use:   "dfworld",
@@ -23,22 +20,22 @@ func main() {
 		Long:  "dfworld is tar for Dwarf Fortress save files.",
 	}
 
-	rootCmd.PersistentFlags().StringVarP(&inFilename, "in", "f", "world.sav", "Specify the save file to use")
-
 	var decompressCmd = &cobra.Command{
-		Use:   "decompress",
+		Use:   "decompress [infile] [outfile]",
 		Short: "Decompress a compressed save file",
+		Long:  `Decompress infile, saving the decompressed version as outfile.`,
 		Run:   decompress,
 	}
 
-	decompressCmd.Flags().StringVarP(&outFilename, "out", "o", "world-out.sav", "Specify the new save file to write to")
-
 	rootCmd.AddCommand(decompressCmd)
 	rootCmd.Execute()
-
 }
 
 func decompress(cmd *cobra.Command, args []string) {
+	if len(args) != 2 {
+		log.Fatal("decompress requires exactly two arguments.")
+	}
+	inFilename, outFilename := args[0], args[1]
 	in, err := savefile.NewFileFromPath(inFilename)
 	if err != nil {
 		log.Fatalf("Unable to open input file: %v", err)
