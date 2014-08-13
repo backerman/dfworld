@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestSomething(t *testing.T) {
+func TestDecompression(t *testing.T) {
 	RegisterTestingT(t)
 	compressed, err := savefile.NewFileFromPath("testdata/test-world.sav")
 	Ω(err).ShouldNot(HaveOccurred())

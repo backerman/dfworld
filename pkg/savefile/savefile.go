@@ -19,7 +19,8 @@ type File interface {
 }
 
 type file struct {
-	header FileHeader
+	header         FileHeader
+	activeFortress bool
 	*os.File
 }
 
@@ -27,6 +28,14 @@ type file struct {
 type FileHeader struct {
 	Version      uint32
 	IsCompressed uint32
+}
+
+// FileInfo is all the information about a file that we're
+// currently extracting.
+type FileInfo struct {
+	Version   string // header
+	FortName  string // offset: 138 (DF2014)
+	WorldName string
 }
 
 func readHeader(r io.Reader) FileHeader {
@@ -45,6 +54,52 @@ func (f *file) ListChunks() []int {
 
 func (f *file) Close() error {
 	return f.File.Close()
+}
+
+type versMap struct {
+	version uint32
+	offset  int
+}
+
+// worldHeaderLen returns the length of this save's
+// world header; its value depends on the Dwarf Fortess
+// version that created the save.
+//
+// Oh, and it's different depending on whether we have
+// world.sav or world.dat. Need to store that bloody thing.
+func (f *file) worldHeaderLen() (l int) {
+	// meh, these are all off by constant... go though rawextract again
+	var offsets []versMap
+
+	if f.activeFortress {
+		// world.sav
+		offsets = []versMap{
+			{0, 0x46},
+			{1372, 0x5a},
+			{1400, 0x5e},
+			{1441, 0x72},
+		}
+	} else {
+		// world.dat
+		offsets = []versMap{
+			{0, 0x46},
+			{1372, 0x5a},
+			{1400, 0x5e},
+			{1441, 0x72},
+		}
+	}
+	for _, o := range offsets {
+		if f.header.Version >= o.version {
+			l = o.offset
+		}
+	}
+	return
+}
+
+func (f *file) GetInfo() FileInfo {
+	// Get the decompressed reader, seek to the start of what we
+	// care about, read what we want, close the reader.
+	return FileInfo{}
 }
 
 // NewFileFromPath is a convenience method for NewFile.
