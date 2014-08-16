@@ -7,13 +7,17 @@ package savefile
 import (
 	"encoding/binary"
 	"io"
+	"log"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 // File represents our file; it mostly wraps the reader
 type File interface {
 	Header() FileHeader
 	ListChunks() []int
+	GetInfo() FileInfo
 	DecompressedReader() (io.ReadCloser, error)
 	io.Closer
 }
@@ -34,8 +38,14 @@ type FileHeader struct {
 // currently extracting.
 type FileInfo struct {
 	Version   string // header
-	FortName  string // offset: 138 (DF2014)
 	WorldName string
+	Fort      *FortInfo
+}
+
+// FortInfo provides information about an active fortress.
+type FortInfo struct {
+	Name    string // offset: 138 (DF2014)
+	CivName string
 }
 
 func readHeader(r io.Reader) FileHeader {
@@ -65,8 +75,7 @@ type versMap struct {
 // world header; its value depends on the Dwarf Fortess
 // version that created the save.
 //
-// Oh, and it's different depending on whether we have
-// world.sav or world.dat. Need to store that bloody thing.
+// The world header comes after the save header.
 func (f *file) worldHeaderLen() (l int) {
 	// meh, these are all off by constant... go though rawextract again
 	var offsets []versMap
@@ -74,18 +83,18 @@ func (f *file) worldHeaderLen() (l int) {
 	if f.activeFortress {
 		// world.sav
 		offsets = []versMap{
-			{0, 0x46},
-			{1372, 0x5a},
-			{1400, 0x5e},
-			{1441, 0x72},
+			{0, 86},
+			{1372, 106},
+			{1400, 110},
+			{1441, 130},
 		}
 	} else {
 		// world.dat
 		offsets = []versMap{
-			{0, 0x46},
-			{1372, 0x5a},
-			{1400, 0x5e},
-			{1441, 0x72},
+			{0, 70},
+			{1372, 90},
+			{1400, 94},
+			{1441, 114},
 		}
 	}
 	for _, o := range offsets {
@@ -116,6 +125,15 @@ func NewFile(r *os.File) (File, error) {
 	f := new(file)
 	f.File = r
 	f.header = readHeader(f)
+	fileExtension := strings.ToLower(filepath.Ext(f.File.Name()))
+	switch fileExtension {
+	case ".sav":
+		f.activeFortress = true
+	case ".dat":
+		f.activeFortress = false
+	default:
+		log.Fatalf("File %v extension invalid (not .sav or .dat)", fileExtension)
+	}
 	f.Seek(0, 0) // go back to start
 	return f, nil
 }
