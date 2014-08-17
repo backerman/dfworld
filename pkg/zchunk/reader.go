@@ -11,7 +11,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"log"
 )
 
 type reader struct {
@@ -37,7 +36,6 @@ func (r *reader) Read(buf []byte) (int, error) {
 		// a zlib reader to read the compressed string.
 		var toRead uint32
 		err = binary.Read(r.rawReader, binary.LittleEndian, &toRead)
-		log.Printf("ToRead: %v bytes", int64(toRead))
 		if err == nil {
 			r.zInReader = &io.LimitedReader{R: r.rawReader, N: int64(toRead)}
 			r.zOutReader, err = zlib.NewReader(r.zInReader)
