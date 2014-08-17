@@ -38,7 +38,6 @@ func readString(r io.Reader) string {
 	if err != nil {
 		log.Fatalf("Error when reading string length: %v", err)
 	}
-	log.Printf("Reading CP437 string of length %v bytes", strlen)
 	strBuf := make([]byte, strlen)
 	_, err = io.ReadFull(r, strBuf)
 	if err != nil {

@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"text/template"
 
 	"github.com/backerman/dfworld/pkg/savefile"
 	"github.com/spf13/cobra"
@@ -27,7 +28,14 @@ func main() {
 		Run:   decompress,
 	}
 
+	var infoCmd = &cobra.Command{
+		Use:   "info [worldfile]",
+		Short: "Get information about a world",
+		Run:   info,
+	}
+
 	rootCmd.AddCommand(decompressCmd)
+	rootCmd.AddCommand(infoCmd)
 	rootCmd.Execute()
 }
 
@@ -56,4 +64,27 @@ func decompress(cmd *cobra.Command, args []string) {
 	out.Close()
 	inReader.Close()
 	in.Close()
+}
+
+const infoTemplate = `
+World {{.WorldName}}:
+Created with Dwarf Fortress version {{.Version}}
+Current year: {{.Year}}
+{{if .Fort }}Fortress name: {{.Fort.Name}}
+{{else}}No active fortress
+{{end}}
+`
+
+func info(cmd *cobra.Command, args []string) {
+	if len(args) != 1 {
+		log.Fatal("info requires exactly one argument.")
+	}
+	inFilename := args[0]
+	in, err := savefile.NewFileFromPath(inFilename)
+	if err != nil {
+		log.Fatalf("Unable to open input file: %v", err)
+	}
+	info := in.GetInfo()
+	t := template.Must(template.New("info").Parse(infoTemplate))
+	t.Execute(os.Stdout, info)
 }
