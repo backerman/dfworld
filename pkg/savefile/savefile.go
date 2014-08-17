@@ -41,6 +41,7 @@ type FileHeader struct {
 type FileInfo struct {
 	Version   string // header
 	WorldName string
+	Year      int
 	Fort      *FortInfo
 }
 
@@ -157,13 +158,14 @@ func (f *file) GetInfo() (i FileInfo) {
 	// Advance over the world header.
 	io.CopyN(ioutil.Discard, r, f.worldHeaderLen())
 	if f.activeFortress {
-		log.Print("Is a new fortress.")
 		fort := new(FortInfo)
 		fort.Name = readString(r)
 		i.Fort = fort
 	}
 	i.WorldName = readString(r)
-	fmt.Printf("Got info for: %v", i)
+	var year uint32
+	binary.Read(r, binary.LittleEndian, &year)
+	i.Year = int(year)
 	return
 }
 

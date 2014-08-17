@@ -15,6 +15,7 @@ type world struct {
 	filename  string
 	worldname string
 	version   string
+	year      int
 	save      savefile.File
 	fort      *fortress
 }
@@ -29,6 +30,7 @@ var saves = []*world{
 		filename:  "testdata/savtest/world.sav",
 		worldname: "Thur Minbaz",
 		version:   "0.40.06",
+		year:      5,
 		fort: &fortress{
 			name: "Avuzdakost",
 			// civname: "Vesalath",
@@ -52,6 +54,7 @@ func TestSavefileParsing(t *testing.T) {
 		i := s.save.GetInfo()
 		Ω(i.Version).Should(Equal(s.version))
 		Ω(i.WorldName).Should(Equal(s.worldname))
+		Ω(i.Year).Should(Equal(s.year))
 		if s.fort != nil {
 			Ω(i.Fort).ShouldNot(BeNil())
 			Ω(i.Fort.Name).Should(Equal(s.fort.name))
