@@ -6,7 +6,9 @@ package savefile
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -44,8 +46,8 @@ type FileInfo struct {
 
 // FortInfo provides information about an active fortress.
 type FortInfo struct {
-	Name    string // offset: 138 (DF2014)
-	CivName string
+	Name string // offset: 138 (DF2014)
+	//	CivName string
 }
 
 func readHeader(r io.Reader) FileHeader {
@@ -66,9 +68,39 @@ func (f *file) Close() error {
 	return f.File.Close()
 }
 
+type versString struct {
+	version uint32
+	str     string
+}
+
+// versionStrings maps the header version uint16 to its human-readable equivalent.
+var versionStrings = []versString{
+	{1287, "0.31.01"}, {1288, "0.31.02"},
+	{1289, "0.31.03"}, {1292, "0.31.04"},
+	{1295, "0.31.05"}, {1297, "0.31.06"},
+	{1300, "0.31.08"}, {1304, "0.31.09"},
+	{1305, "0.31.10"}, {1310, "0.31.11"},
+	{1311, "0.31.12"}, {1323, "0.31.13"},
+	{1325, "0.31.14"}, {1326, "0.31.15"},
+	{1327, "0.31.16"}, {1340, "0.31.17"},
+	{1341, "0.31.18"}, {1351, "0.31.19"},
+	{1353, "0.31.20"}, {1354, "0.31.21"},
+	{1359, "0.31.22"}, {1360, "0.31.23"},
+	{1361, "0.31.24"}, {1362, "0.31.25"},
+	{1372, "0.34.01"}, {1374, "0.34.02"},
+	{1376, "0.34.03"}, {1377, "0.34.04"},
+	{1378, "0.34.05"}, {1382, "0.34.06"},
+	{1383, "0.34.07"}, {1400, "0.34.08"},
+	{1402, "0.34.09"}, {1403, "0.34.10"},
+	{1404, "0.34.11"}, {1441, "0.40.01"},
+	{1442, "0.40.02"}, {1443, "0.40.03"},
+	{1444, "0.40.04"}, {1445, "0.40.05"},
+	{1446, "0.40.06"}, {1448, "0.40.07"},
+}
+
 type versMap struct {
 	version uint32
-	offset  int
+	offset  int64
 }
 
 // worldHeaderLen returns the length of this save's
@@ -76,10 +108,8 @@ type versMap struct {
 // version that created the save.
 //
 // The world header comes after the save header.
-func (f *file) worldHeaderLen() (l int) {
-	// meh, these are all off by constant... go though rawextract again
+func (f *file) worldHeaderLen() (l int64) {
 	var offsets []versMap
-
 	if f.activeFortress {
 		// world.sav
 		offsets = []versMap{
@@ -105,10 +135,36 @@ func (f *file) worldHeaderLen() (l int) {
 	return
 }
 
-func (f *file) GetInfo() FileInfo {
-	// Get the decompressed reader, seek to the start of what we
-	// care about, read what we want, close the reader.
-	return FileInfo{}
+// GetInfo returns a FileInfo struct for this world.
+func (f *file) GetInfo() (i FileInfo) {
+	for _, v := range versionStrings {
+		if v.version == f.header.Version {
+			i.Version = v.str
+		}
+	}
+	if i.Version == "" {
+		i.Version = fmt.Sprintf("Unidentified version %v", f.header.Version)
+	}
+	f.Seek(0, os.SEEK_CUR)
+	r, err := f.DecompressedReader()
+	if err != nil {
+		log.Fatalf("Couldn't open savefile: %v", err)
+	}
+	defer r.Close()
+
+	// Save header has already been read; skip over it.
+	_ = readHeader(r)
+	// Advance over the world header.
+	io.CopyN(ioutil.Discard, r, f.worldHeaderLen())
+	if f.activeFortress {
+		log.Print("Is a new fortress.")
+		fort := new(FortInfo)
+		fort.Name = readString(r)
+		i.Fort = fort
+	}
+	i.WorldName = readString(r)
+	fmt.Printf("Got info for: %v", i)
+	return
 }
 
 // NewFileFromPath is a convenience method for NewFile.

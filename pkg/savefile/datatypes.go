@@ -30,11 +30,17 @@ func Convert437String(b []byte) string {
 	return string(utfStringBuf)
 }
 
-func (f *file) readString() string {
-	var strlen int16
-	binary.Read(f, binary.LittleEndian, &strlen)
+// readString reads a CP437 string with prepended 16-bit, little-endian
+// length.
+func readString(r io.Reader) string {
+	var strlen uint16
+	err := binary.Read(r, binary.LittleEndian, &strlen)
+	if err != nil {
+		log.Fatalf("Error when reading string length: %v", err)
+	}
+	log.Printf("Reading CP437 string of length %v bytes", strlen)
 	strBuf := make([]byte, strlen)
-	_, err := io.ReadFull(f, strBuf)
+	_, err = io.ReadFull(r, strBuf)
 	if err != nil {
 		log.Fatalf("Unable to open reader - dying horribly: %v", err)
 	}

@@ -11,13 +11,13 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"log"
 )
 
 type reader struct {
-	hasFinished bool             // Whether we've finished reading the block
-	zOutReader  io.Reader        // Read the decompressed block
-	zInReader   io.LimitedReader // Passed to zlib
-	rawReader   io.Reader        // Input from our caller
+	zOutReader io.Reader         // Read the decompressed block
+	zInReader  *io.LimitedReader // Passed to zlib
+	rawReader  io.Reader         // Input from our caller
 }
 
 // NewReader creates a new chunk reader from an existing Reader.
@@ -30,44 +30,31 @@ func NewReader(r io.Reader) io.ReadCloser {
 // Read reads from the compressed input stream, up to the end of the
 // current block.
 func (r *reader) Read(buf []byte) (int, error) {
-	if r.hasFinished {
-		// Nothing more to read.
-		fmt.Println("Returning w/ EOF")
-		return 0, io.EOF
-	}
-
 	var err error
 
-	if r.zInReader.N == 0 {
+	if r.zInReader == nil {
 		// Haven't started reading yet -- get the length and create
 		// a zlib reader to read the compressed string.
 		var toRead uint32
 		err = binary.Read(r.rawReader, binary.LittleEndian, &toRead)
+		log.Printf("ToRead: %v bytes", int64(toRead))
 		if err == nil {
-			r.zInReader = io.LimitedReader{R: r.rawReader, N: int64(toRead)}
-			r.zOutReader, err = zlib.NewReader(&r.zInReader)
+			r.zInReader = &io.LimitedReader{R: r.rawReader, N: int64(toRead)}
+			r.zOutReader, err = zlib.NewReader(r.zInReader)
+		} else if err == io.EOF {
+			// We were expecting a block and we actually got an EOF where the header
+			// should have been.
+			return 0, io.ErrUnexpectedEOF
+		} else {
+			fmt.Printf("Returning w/ error %v", err)
+			return 0, err
 		}
-	}
-
-	if err == io.EOF {
-		// We were expecting a block and we actually got an EOF where the header
-		// should have been.
-		return 0, io.ErrUnexpectedEOF
-	}
-
-	if err != nil {
-		fmt.Printf("Returning w/ error %v", err)
-		return 0, err
 	}
 
 	// Now that we have a stream, read it.
 	var n int
 	n, err = r.zOutReader.Read(buf)
-	// Check to see if we've read the entire block.
-	if r.zInReader.N == 0 {
-		r.hasFinished = true
-		err = io.EOF
-	}
+
 	return n, err
 }
 
