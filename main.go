@@ -69,8 +69,8 @@ func decompress(cmd *cobra.Command, args []string) {
 const infoTemplate = `
 World {{.WorldName}}:
 Created with Dwarf Fortress version {{.Version}}
-Current year: {{.Year}}
 {{if .Fort }}Fortress name: {{.Fort.Name}}
+Current year: {{.Fort.Year}}
 {{else}}No active fortress
 {{end}}
 `

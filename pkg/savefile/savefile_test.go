@@ -54,9 +54,9 @@ func TestSavefileParsing(t *testing.T) {
 		i := s.save.GetInfo()
 		Ω(i.Version).Should(Equal(s.version))
 		Ω(i.WorldName).Should(Equal(s.worldname))
-		Ω(i.Year).Should(Equal(s.year))
 		if s.fort != nil {
 			Ω(i.Fort).ShouldNot(BeNil())
+			Ω(i.Fort.Year).Should(Equal(s.year))
 			Ω(i.Fort.Name).Should(Equal(s.fort.name))
 			// where's the civ name stored?
 			// Ω(i.Fort.CivName).Should(Equal(s.fort.civname))
